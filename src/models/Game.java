@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import exceptions.InvalidBoardSizeException;
 import exceptions.InvalidGameState;
 import factories.BotPlayerFactory;
 import factories.HumanPlayerFactory;
 import factories.PlayerFactory;
-import strategy.gameWinningStrategy.ColWiseWinningStrategy;
-import strategy.gameWinningStrategy.DiagonalWiseWinningStrategy;
+import strategy.botPlayingStrategy.RandomBotPlayingStrategy;
 import strategy.gameWinningStrategy.GameWinningStrategy;
-import strategy.gameWinningStrategy.RowWiseWinningStrategy;
+import strategy.gameWinningStrategy.RowColDiagonalWinningStrategy;
 
 public class Game {
 	Board board;
@@ -25,49 +25,47 @@ public class Game {
 	List<GameWinningStrategy> winningStrategies = new ArrayList<>();
 	Player winner;
 
-	
 	public Player getWinner() {
 		return winner;
 	}
+
 	public Game(List<Player> players, Board board) {
 		this.players = players;
 		this.board = board;
 		state = GameState.CREATED;
-		winningStrategies.add(new RowWiseWinningStrategy());
-		winningStrategies.add(new ColWiseWinningStrategy());
-		winningStrategies.add(new DiagonalWiseWinningStrategy());
-		
+
+		winningStrategies.add(new RowColDiagonalWinningStrategy(board.getDimension()));
+
 		board.printBoard();
 	}
 
 	public void run() throws InvalidGameState {
-		if(state == GameState.ENDED || state == GameState.DRAW) {
+		if (state == GameState.ENDED || state == GameState.DRAW) {
 			throw new InvalidGameState("Game is ended, no more moves can execute");
 		}
-		
+
 		state = GameState.IN_PROGRESS;
 		Move mv = board.executeMove(players.get(nextMoveIndex));
 		moves.add(mv);
 
-		
-		for(GameWinningStrategy gws : winningStrategies) {
-			if(gws.wonGame(board,mv.getCell())) {
+		for (GameWinningStrategy gws : winningStrategies) {
+			if (gws.wonGame(mv.getCell())) {
 				state = GameState.ENDED;
 				winner = players.get(nextMoveIndex);
 				return;
 			}
 		}
-		
-		if(moves.size() == board.getDimension()*board.getDimension()) {
+
+		if (moves.size() == board.getDimension() * board.getDimension()) {
 			state = GameState.DRAW;
 			winner = null;
 			return;
 		}
-		
+
 		nextMoveIndex++;
 		nextMoveIndex = nextMoveIndex % players.size();
 	}
-	
+
 	public GameState getGameState() {
 		return state;
 	}
@@ -79,30 +77,34 @@ public class Game {
 	public void print() {
 		board.printBoard();
 	}
-	
+
 	public static class Builder {
 		List<Player> players = new ArrayList<>();
 		Board board;
 
 		public Builder addPlayers(int n) {
 
-			PlayerFactory pf = new HumanPlayerFactory();
+			PlayerFactory pf = null;
 			Map<Character, Player> mp = new HashMap<>();
-			for (int i = 0; i < n; ++i) {
-				Player p = pf.createPlayer();
-				if(mp.containsKey(p.getSymbol())) {
-					--i;
-					System.err.println("Symbol already taken by : " + mp.get(p.getSymbol()).getName());
-					continue;
-				}
-				players.add(p);
-			}
-			
+
 			// add 1 Bots also when human player is 1
-			if(n == 1) {
-				pf = new BotPlayerFactory();
+			if (n == 1) {
+				pf = new BotPlayerFactory(new RandomBotPlayingStrategy());
 				Player b = pf.createPlayer();
 				players.add(b);
+				mp.put(b.getSymbol(), b);
+			}
+			pf = new HumanPlayerFactory();
+			for (int i = 0; i < n; ++i) {
+				Player p = pf.createPlayer();
+				if (mp.containsKey(p.getSymbol())) {
+					--i;
+					System.err.println("Symbol [" + p.getSymbol() + "] already taken by  ["
+							+ mp.get(p.getSymbol()).getName() + "]");
+					continue;
+				}
+				mp.put(p.getSymbol(), p);
+				players.add(p);
 			}
 
 			return this;
@@ -113,7 +115,11 @@ public class Game {
 			return this;
 		}
 
-		boolean verify() {
+		boolean verify() throws InvalidBoardSizeException {
+			if(board.getDimension() < 3) {
+				throw new InvalidBoardSizeException("Board size is too small");
+			}
+			
 			if (board.getDimension() <= players.size()) {
 				System.out.println("Board is too small to play, increase its dimension");
 				return false;
@@ -130,7 +136,7 @@ public class Game {
 			return true;
 		}
 
-		public Game build() {
+		public Game build() throws InvalidBoardSizeException {
 			if (!verify()) {
 				System.out.println("Game creation is not valid, Please enter valid values");
 				return null;

@@ -5,6 +5,6 @@ import models.Cell;
 
 public interface GameWinningStrategy {
 
-	public boolean wonGame(Board board, Cell cell);
+	public boolean wonGame(Cell cell);
 	
 }

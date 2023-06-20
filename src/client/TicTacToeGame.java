@@ -1,13 +1,14 @@
 package client;
 
 import controllers.GameController;
+import exceptions.InvalidBoardSizeException;
 import exceptions.InvalidGameState;
 import models.Game;
 import models.GameState;
 
 public class TicTacToeGame {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InvalidBoardSizeException {
 		
 		// Create Game
 		// Create Game controller
@@ -19,7 +20,6 @@ public class TicTacToeGame {
 		try {
 			while(gc.play(g1));
 		} catch (InvalidGameState e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

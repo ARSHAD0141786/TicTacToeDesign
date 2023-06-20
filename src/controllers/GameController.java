@@ -2,6 +2,7 @@ package controllers;
 
 import java.util.Scanner;
 
+import exceptions.InvalidBoardSizeException;
 import exceptions.InvalidGameState;
 import models.Game;
 import models.GameState;
@@ -10,7 +11,7 @@ import models.Player;
 public class GameController {
 	Scanner sc = new Scanner(System.in);
 
-	public Game createNewGame() {
+	public Game createNewGame() throws InvalidBoardSizeException {
 
 		System.out.print("Enter number of players : ");
 		int n = sc.nextInt();
